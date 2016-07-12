@@ -35,9 +35,9 @@ def make_url_safe(actress_name):
 # Shows whether the current output is outputting video- or photo scenes.
 def scene_type(link):
     if "scene" in link:
-        return "Videos"
+        return "Video scenes:"
     else:
-        return "Photos"
+        return "Photo scenes:"
 
 
 # Passes on the correct URL(s) needed for the request.
@@ -51,6 +51,38 @@ def correct_urls(argv, argp, actress_name):
     else:
         return ["http://www.hardx.com/en/search/" + actress_name + "/photoSet?query=" + actress_name]
 
+# Fetches all scenes from the URL matching the optional filter.
+def get_scenes(url, filter):
+    filter = filter.lower()
+    scenes = []
+
+    request = requests.get(url)
+
+    data = request.text
+    soup = BeautifulSoup(data, 'html.parser')
+
+    # Extracting the relevant scene information.
+    for link in soup.findAll("div", {"class": "tlcDetails"}):
+        scene_name = link.find('a').contents[0]
+        release_date = fix_date((link.find("span", {"class": "tlcSpecsDate"}).contents[2]).contents[0])
+
+        # Extract a list of actors
+        for cast_member in link.findAll("div", {"class": "tlcActors"}):
+            cast = []
+            for person in cast_member.findAll("a"):
+                cast.append(person.contents[0])
+
+        pornstars = ", ".join(cast)
+
+        scene = "[HardX]" + str(pornstars) + " - " + str(scene_name) + "[" + str(release_date) + "]"
+
+        # Only append the matched scenes to return.
+        if filter in scene.lower():
+            scenes.append(scene)
+
+    return scenes
+
+
 
 def main():
     parser = ArgumentParser()
@@ -58,38 +90,22 @@ def main():
     parser.add_argument("-a", dest="actress_name", help="The name of the actress/actor.")
     parser.add_argument('-v', action="store_true", help="Use this arguments to get all the video scenes for the actress/actor.")
     parser.add_argument('-p', action="store_true", help="Use this arguments to get all the photo scenes for the actress/actor.")
+    parser.add_argument('-f', dest="filter", default="")
 
     args = parser.parse_args()
 
+    filter = args.filter
     actress_name = make_url_safe(args.actress_name)
+
     urls = correct_urls(args.v, args.p, actress_name)
 
     # Iterate over the URLs - needed when both -v and -p are selected.
     for url in urls:
-        request = requests.get(url)
+        scenes = get_scenes(url, filter)
+        output_scenes = "\n".join(scenes)
 
-        data = request.text
-        soup = BeautifulSoup(data, 'html.parser')
-
-        if soup.findAll("div", {"class": "tlcDetails"}):
-            num_of_files = len(soup.findAll("div", {"class": "tlcDetails"}))
-            print("\n" + str(num_of_files) + " " + scene_type(url) + " scenes found:")
-
-            # Extracting the relevant scene information.
-            for link in soup.findAll("div", {"class": "tlcDetails"}):
-                scene_name = link.find('a').contents[0]
-                release_date = fix_date((link.find("span", {"class": "tlcSpecsDate"}).contents[2]).contents[0])
-
-                # Extract a list of actors
-                for cast_member in link.findAll("div", {"class": "tlcActors"}):
-                    cast = []
-                    for person in cast_member.findAll("a"):
-                        cast.append(person.contents[0])
-
-                pornstars = ", ".join(cast)
-                print("[HardX]" + str(pornstars) + " - " + str(scene_name) + "[" + str(release_date) + "]")
-        else:
-            print("No matching actresses or actors with the name '" + actress_name + "' found!")
+        print("\n" + str(len(scenes)) + " " + scene_type(url))
+        print(output_scenes)
 
 if __name__ == "__main__":
     main()
