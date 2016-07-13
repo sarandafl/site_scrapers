@@ -18,6 +18,24 @@ from bs4 import BeautifulSoup
 from argparse import ArgumentParser
 
 
+# Get a list of all available pornstars.
+def get_pornstars():
+    pornstars = []
+
+    request = requests.get("http://www.hardx.com/en/models/alphabetical/1/0")
+
+    data = request.text
+    soup = BeautifulSoup(data, 'html.parser')
+
+
+    for ul in soup.findAll("div", {"class": "Giraffe_ActorList Gamma_Component Giraffe_ActorList_Filters Giraffe_ActorList_Structure Giraffe_ActorList_Title"}):
+        for li in ul.findAll("li"):
+            if li.find('a').get('href') is not None:
+                pornstars.append((li.find('a').contents[0]).strip())
+                #print((li.find('a').contents[0]).strip())
+    return pornstars
+
+
 # Changes the date from 'YYYY-MM-dd' to 'dd.MM.YY'
 def fix_date(scene_date):
     date = datetime.strptime(scene_date, '%Y-%M-%d')
@@ -87,25 +105,33 @@ def get_scenes(url, filter):
 def main():
     parser = ArgumentParser()
 
-    parser.add_argument("-a", dest="actress_name", help="The name of the actress/actor.")
+    parser.add_argument("-a", dest="actress_name", default="", help="The name of the actress/actor.")
     parser.add_argument('-v', action="store_true", help="Use this arguments to get all the video scenes for the actress/actor.")
     parser.add_argument('-p', action="store_true", help="Use this arguments to get all the photo scenes for the actress/actor.")
-    parser.add_argument('-f', dest="filter", default="")
+    parser.add_argument('-l', action="store_true", help="Outputs a list of all pornstars. Not compatible with '-a','-v','-p','-f'.")
+    parser.add_argument('-f', dest="filter", default="", help="Filter scenes by using a single keyword.")
 
     args = parser.parse_args()
 
     filter = args.filter
     actress_name = make_url_safe(args.actress_name)
 
-    urls = correct_urls(args.v, args.p, actress_name)
+    # Outputs a list of pornstars when only the '-l' argument is used.
+    if actress_name is "":
+        if args.l is True:
+            pornstars = get_pornstars()
+            output_pornstars = "\n".join(pornstars)
+            print(output_pornstars)
+    else:
+        urls = correct_urls(args.v, args.p, actress_name)
 
-    # Iterate over the URLs - needed when both -v and -p are selected.
-    for url in urls:
-        scenes = get_scenes(url, filter)
-        output_scenes = "\n".join(scenes)
+        # Iterate over the URLs - needed when both -v and -p are selected.
+        for url in urls:
+            scenes = get_scenes(url, filter)
+            output_scenes = "\n".join(scenes)
 
-        print("\n" + str(len(scenes)) + " " + scene_type(url))
-        print(output_scenes)
+            print("\n" + str(len(scenes)) + " " + scene_type(url))
+            print(output_scenes)
 
 if __name__ == "__main__":
     main()
