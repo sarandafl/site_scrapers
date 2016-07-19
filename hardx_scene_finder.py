@@ -23,16 +23,15 @@ def get_pornstars():
     pornstars = []
 
     request = requests.get("http://www.hardx.com/en/models/alphabetical/1/0")
-
     data = request.text
     soup = BeautifulSoup(data, 'html.parser')
-
 
     for ul in soup.findAll("div", {"class": "Giraffe_ActorList Gamma_Component Giraffe_ActorList_Filters Giraffe_ActorList_Structure Giraffe_ActorList_Title"}):
         for li in ul.findAll("li"):
             if li.find('a').get('href') is not None:
                 pornstars.append((li.find('a').contents[0]).strip())
                 #print((li.find('a').contents[0]).strip())
+    
     return pornstars
 
 
@@ -45,16 +44,20 @@ def fix_date(scene_date):
 # Removes whitespace from string and returns the safe word to use in the URL manipulation.
 def make_url_safe(actress_name):
     if " " in actress_name:
+        
         return (actress_name.replace(' ', '%20')).lower()
     else:
+        
         return actress_name.lower()
 
 
 # Shows whether the current output is outputting video- or photo scenes.
 def scene_type(link):
     if "scene" in link:
+        
         return "Video scenes:"
     else:
+        
         return "Photo scenes:"
 
 
@@ -62,12 +65,16 @@ def scene_type(link):
 def correct_urls(argv, argp, actress_name):
     # Checks if the -v or -p (or both) argument was used.
     if argv is True and argp is True:
+        
         return ["http://www.hardx.com/en/search/" + actress_name + "/scene?query=" + actress_name,
                 "http://www.hardx.com/en/search/" + actress_name + "/photoSet?query=" + actress_name]
     elif argv is True and argp is False:
+        
         return ["http://www.hardx.com/en/search/" + actress_name + "/scene?query=" + actress_name]
     else:
+        
         return ["http://www.hardx.com/en/search/" + actress_name + "/photoSet?query=" + actress_name]
+
 
 # Fetches all scenes from the URL matching the optional filter.
 def get_scenes(url, filter):
@@ -75,7 +82,6 @@ def get_scenes(url, filter):
     scenes = []
 
     request = requests.get(url)
-
     data = request.text
     soup = BeautifulSoup(data, 'html.parser')
 
@@ -91,7 +97,6 @@ def get_scenes(url, filter):
                 cast.append(person.contents[0])
 
         pornstars = ", ".join(cast)
-
         scene = "[HardX]" + str(pornstars) + " - " + str(scene_name) + "[" + str(release_date) + "]"
 
         # Only append the matched scenes to return.
@@ -99,7 +104,6 @@ def get_scenes(url, filter):
             scenes.append(scene)
 
     return scenes
-
 
 
 def main():
